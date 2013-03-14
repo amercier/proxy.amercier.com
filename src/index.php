@@ -35,6 +35,11 @@ try {
     $url = preg_replace('/(\?|&)'.$key.'(=[^\?|&]*)?/', '', $url);
   }
 
+  $uri = new Zend\Uri\Uri($url);
+  if(!$uri->isValid()) {
+    throw new Exception('Invalid URI "' . $url . '"');
+  }
+
   // Send the request
   $request = new Request();
   $request->setUri($url);
@@ -80,7 +85,6 @@ catch(Exception $e) {
     'url' => $url,
     'error' => get_class($e) . ' ' . $e->getMessage(),
   );
-  throw $e;
 }
 
 if(isset($_GET['json']) || !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
