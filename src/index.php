@@ -19,8 +19,16 @@ try {
     ? ($inputRequest->getUri()->getHost()==='local'?'/proxy.amercier.com/':'/')
     : $inputRequest->getBasePath().'/';
 
-  // request uri - base path = url
-  $url = preg_replace('/^'.preg_quote($basePath,'/').'(index\.php\/)?/', '', $inputRequest->getRequestUri());
+  $pattern = '/^'.preg_quote($basePath,'/').'/';
+  if(!preg_match($pattern, $inputRequest->getRequestUri())) {
+    $pattern = '/^'.preg_quote($basePath,'/').'/';
+  }
+
+  // Clean url
+  $url = $inputRequest->getRequestUri();
+  foreach(explode('/',trim($basePath,'/').'/index.php/') as $pathItem) {
+    $url = preg_replace('/^\/'.preg_quote($pathItem,'/').'/', '', $url);
+  }
 
   // Remove all custom variables
   foreach($_GET as $key => $variable) {
@@ -31,6 +39,24 @@ try {
   $request = new Request();
   $request->setUri($url);
 
+  $request->setHeaders($inputRequest->getHeaders());
+
+  switch($inputRequest->getMethod()) {
+    case Request::METHOD_OPTIONS : break;
+    case Request::METHOD_GET     : break;
+    case Request::METHOD_HEAD    : break;
+    case Request::METHOD_POST:
+      $request->setPost($inputRequest->getPost());
+      break;
+    case Request::METHOD_PUT     : break;
+    case Request::METHOD_DELETE  : break;
+    case Request::METHOD_TRACE   : break;
+    case Request::METHOD_CONNECT : break;
+    case Request::METHOD_PATCH   : break;
+    case Request::METHOD_PROPFIND: break;
+  }
+  $request->setMethod($inputRequest->getMethod());
+
   $client = new Client();
   $response = $client->dispatch($request);
 
@@ -39,7 +65,10 @@ try {
     'requestUri' => $inputRequest->getRequestUri(),
     'basePath' => $basePath,
     'url' => $url,
-    'headers' => $response->getHeaders(),
+    'method' => $request->getMethod(),
+    'inputRequestHeaders' => $inputRequest->getHeaders()->toArray(),
+    'requestHeaders' => $request->getHeaders()->toArray(),
+    'headers' => $response->getHeaders()->toArray(),
     'body' => $response->getBody(),
   );
 }
@@ -49,8 +78,9 @@ catch(Exception $e) {
     'requestUri' => $inputRequest->getRequestUri(),
     'basePath' => $basePath,
     'url' => $url,
-    'error' => $e->getMessage()
+    'error' => get_class($e) . ' ' . $e->getMessage(),
   );
+  throw $e;
 }
 
 if(isset($_GET['json']) || !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
