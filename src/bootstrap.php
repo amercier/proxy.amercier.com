@@ -12,11 +12,9 @@ if(!defined('APPLICATION_ENV')) {
   define('APPLICATION_ENV', getenv('APPLICATION_ENV') === 'false' ? 'production' : getenv('APPLICATION_ENV'));
 }
 if(APPLICATION_ENV === 'development') {
-  define('BASEURL', '/www.oeco-architectes.com');
   define('MIN', '');
 }
 else {
-  define('BASEURL', '');
   define('MIN', '.min');
 }
 
