@@ -1,6 +1,7 @@
 <?php
 use Zend\Http\Request;
 use Zend\Http\Client;
+use Zend\Http\Response;
 
 try {
   require_once realpath(__DIR__ . '/bootstrap.php');
@@ -8,7 +9,7 @@ try {
   // Check GET variables
   foreach($_GET as $key => $variable) {
     if(!in_array($key, $config->allowedParams->toArray())) {
-      throw new Exception('Unexpected parameter "' . $key . '" found in URL. Please replace all & with %26');
+      throw new Exception('Unexpected parameter "' . $key . '" found in URL. Please replace all & with %26', 400);
     }
   }
 
@@ -37,22 +38,25 @@ try {
 
   $uri = new Zend\Uri\Uri($url);
   if(!$uri->isValid()) {
-    throw new Exception('Invalid URI "' . $url . '"');
+    throw new Exception('Invalid URL "' . $url . '"', 400);
   }
 
   // Send the request
   $request = new Request();
   $request->setUri($url);
 
-  $request->setHeaders($inputRequest->getHeaders());
+  $forbiddenHeaders = $config->forbiddenHeaders->toArray();
+  foreach($inputRequest->getHeaders() as $header) {
+    if(!in_array(strtolower($header->getFieldName()), $forbiddenHeaders)) {
+      $request->getHeaders()->addHeader($header);
+    }
+  }
 
   switch($inputRequest->getMethod()) {
     case Request::METHOD_OPTIONS : break;
     case Request::METHOD_GET     : break;
     case Request::METHOD_HEAD    : break;
-    case Request::METHOD_POST:
-      $request->setPost($inputRequest->getPost());
-      break;
+    case Request::METHOD_POST    : $request->setPost($inputRequest->getPost()); break;
     case Request::METHOD_PUT     : break;
     case Request::METHOD_DELETE  : break;
     case Request::METHOD_TRACE   : break;
@@ -78,17 +82,28 @@ try {
   );
 }
 catch(Exception $e) {
+  $response = new Response();
+  $response->setStatusCode($e->getCode() === 0 ? 500 : $e->getCode());
+  $response->setContent($e->getMessage());
+}
+
+if(isset($_GET['json'])) {
+
+  header('Content-Type: application/json');
+
   $output = array(
-    'ok' => false,
+    'ok' => $response->isSuccess(),
     'requestUri' => $inputRequest->getRequestUri(),
     'basePath' => $basePath,
     'url' => $url,
-    'error' => get_class($e) . ' ' . $e->getMessage(),
+    'method' => $request->getMethod(),
+    'inputRequestHeaders' => $inputRequest->getHeaders()->toArray(),
+    'requestHeaders' => $request->getHeaders()->toArray(),
+    'status' => $response->renderStatusLine(),
+    'headers' => $response->getHeaders()->toArray(),
+    'body' => $response->getBody(),
   );
-}
 
-if(isset($_GET['json']) || !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-  header('Content-Type: application/json');
   if(isset($_GET['format'])) {
     echo Zend\Json\Json::prettyPrint(\Zend\Json\Json::encode($output));
   }
@@ -97,5 +112,11 @@ if(isset($_GET['json']) || !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolow
   }
 }
 else {
-  return $output;
+  header($response->renderStatusLine());
+  foreach($response->getHeaders() as $header) {
+    if(!in_array(strtolower($header->getFieldName()), $forbiddenHeaders)) {
+      header($header->toString());
+    }
+  }
+  echo $response->getBody();
 }
