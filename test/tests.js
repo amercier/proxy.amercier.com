@@ -1,13 +1,13 @@
 
-url = window.location.href.replace(/test\/(index\.html)?(\?.*)?(#.*)?$/, '');
+url = 'http://local/proxy.amercier.com/';
 
 asyncTest('Allowed domain', function() {
   $.ajax(url + url + 'test/', { // Oh my, how meta
-    headers: {
-      'Accept': 'text/html',
-      'x-referer-config': window.location.pathname.replace(/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
-    }
-  })
+      headers: {
+        'Accept': 'text/html',
+        'x-referer-config': window.location.pathname.replace(/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
+      }
+    })
     .done(function(response, status, deferred) {
       ok(true, '[' + deferred.status + '] ' + deferred.statusText + ' - ' + deferred.responseText);
       strictEqual(deferred.status, 200, 'Status code should be 200');
@@ -24,11 +24,11 @@ asyncTest('Allowed domain', function() {
 
 asyncTest('Not allowed domain', function() {
   $.ajax(url + 'http://www.iana.org/domains/example', {
-    headers: {
-      'Accept': 'text/html',
-      'X-Referer-Config': window.location.pathname.replace(/test\/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
-    }
-  })
+      headers: {
+        'Accept': 'text/html',
+        'X-Referer-Config': window.location.pathname.replace(/test\/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
+      }
+    })
     .done(function(response, status, deferred) {
       ok(false, '[' + deferred.status + '] ' + deferred.statusText + ' - ' + deferred.responseText);
       start();

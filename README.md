@@ -12,6 +12,10 @@ Setup
 
     cd src/ && composer install
 
+  - Install node.js
+  - Install node.js packages:
+
+    npm install
 
 Usage
 -----
