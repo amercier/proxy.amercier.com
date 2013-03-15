@@ -59,8 +59,9 @@ try {
 
   // ---------------------------------------------------------------------------
   // Check Referer
-  // Ask for a <referer>/proxy.json file
   // ---------------------------------------------------------------------------
+
+  // 1. Check that Referer is in config.allowedReferers
 
   $refererValid = false;
   foreach($config->allowedReferers as $regexp) {
@@ -71,7 +72,21 @@ try {
   if(!$refererValid) {
     throw new Exception('Referer "' . $referer->getHost() . '" is not allowed', 400);
   }
-  
+
+  // 2. Ask for a <referer>/proxy.json file, check hosts contains the requested host
+
+  $refererRequest = new Request();
+  $refererRequest->setUri($referer->getScheme() . '://' . $referer->getHost() . ($referer->getPort() === null ? '' : ':' . $referer->getPort()) . '/proxy.json');
+  $client = new Client();
+  $refererResponse = $client->dispatch($refererRequest);
+  $refererConfig = Zend\Json\Json::decode($refererResponse->getBody());
+  if(!isset($refererConfig->hosts)) {
+    throw new Exception('Missing "hosts" in referer configuration file at ' . $refererRequest->getUri());
+  }
+  if(!in_array($uri->getHost(), $refererConfig->hosts)) {
+    throw new Exception('Host "' . $uri->getHost() . '" is not allowed by ' . $refererRequest->getUri());
+  }
+
   // ---------------------------------------------------------------------------
   // Send the request
   // ---------------------------------------------------------------------------
