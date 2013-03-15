@@ -1,8 +1,8 @@
 
-url = 'http://local/proxy.amercier.com/';
+var url = 'http://local/proxy.amercier.com/';
 
 asyncTest('Allowed domain', function() {
-  $.ajax(url + url + 'test/', { // Oh my, how meta
+  $.ajax(url + window.location.href, { // Oh my, how meta
       headers: {
         'Accept': 'text/html',
         'x-referer-config': window.location.pathname.replace(/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
