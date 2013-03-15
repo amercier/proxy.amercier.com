@@ -6,6 +6,10 @@ use Zend\Http\Response;
 try {
   require_once realpath(__DIR__ . '/bootstrap.php');
 
+  // ---------------------------------------------------------------------------
+  // Check arguments
+  // ---------------------------------------------------------------------------
+
   // Check GET variables
   foreach($_GET as $key => $variable) {
     if(!in_array($key, $config->allowedParams->toArray())) {
@@ -41,7 +45,37 @@ try {
     throw new Exception('Invalid URL "' . $url . '"', 400);
   }
 
+  // Referer
+  $referer = $inputRequest->getHeader('Referer');
+  if($referer === false) {
+    throw new Exception('Missing "Referer" HTTP header', 400);
+  }
+  try {
+    $referer = new Zend\Uri\Uri($referer->getFieldValue());
+  }
+  catch(Exception $e) {
+    throw new Exception('Invalid Referer "' . $referer . '": ' . $e->getMessage(), 400);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check Referer
+  // Ask for a <referer>/proxy.json file
+  // ---------------------------------------------------------------------------
+
+  $refererValid = false;
+  foreach($config->allowedReferers as $regexp) {
+    if(preg_match($regexp, $referer->getHost())) {
+      $refererValid = true;
+    }
+  }
+  if(!$refererValid) {
+    throw new Exception('Referer "' . $referer->getHost() . '" is not allowed', 400);
+  }
+  
+  // ---------------------------------------------------------------------------
   // Send the request
+  // ---------------------------------------------------------------------------
+
   $request = new Request();
   $request->setUri($url);
 
