@@ -75,11 +75,27 @@ try {
 
   // 2. Ask for a <referer>/proxy.json file, check hosts contains the requested host
 
+  //var_dump($inputRequest->getHeaders()->toArray());
+
+  $refererHeaderName = $inputRequest->getHeaders()->has($config->refererConfigHeaderName)
+    ? $inputRequest->getHeaders()->get($config->refererConfigHeaderName)->getFieldValue()
+    : '/proxy.json';
+
   $refererRequest = new Request();
-  $refererRequest->setUri($referer->getScheme() . '://' . $referer->getHost() . ($referer->getPort() === null ? '' : ':' . $referer->getPort()) . '/proxy.json');
+  $refererRequest->setUri($referer->getScheme() . '://' . $referer->getHost() . ($referer->getPort() === null ? '' : ':' . $referer->getPort()) . $refererHeaderName);
   $client = new Client();
   $refererResponse = $client->dispatch($refererRequest);
-  $refererConfig = Zend\Json\Json::decode($refererResponse->getBody());
+  if($refererResponse->getStatusCode() === 404) {
+    throw new Exception('Referer configuration is missing at "' . $refererRequest->getUri() . '"');
+  }
+
+  try {
+    $refererConfig = Zend\Json\Json::decode($refererResponse->getBody());
+  }
+  catch(Exception $e) {
+    throw new Exception('Referer configuration should be in JSON format at "' . $refererRequest->getUri() . '"');
+  }
+
   if(!isset($refererConfig->hosts)) {
     throw new Exception('Missing "hosts" in referer configuration file at ' . $refererRequest->getUri());
   }

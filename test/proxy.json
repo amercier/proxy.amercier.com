@@ -1,0 +1,6 @@
+{
+  "hosts": [
+    "local",
+    "www.google.com"
+  ]
+}

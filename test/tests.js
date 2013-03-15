@@ -4,7 +4,8 @@ url = window.location.href.replace(/test\/(index\.html)?(\?.*)?(#.*)?$/, '');
 asyncTest('Allowed domain', function() {
   $.ajax(url + url + 'test/', { // Oh my, how meta
     headers: {
-      'Accept': 'text/html'
+      'Accept': 'text/html',
+      'x-referer-config': window.location.pathname.replace(/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
     }
   })
     .done(function(response, status, deferred) {
@@ -24,7 +25,8 @@ asyncTest('Allowed domain', function() {
 asyncTest('Not allowed domain', function() {
   $.ajax(url + 'http://www.iana.org/domains/example', {
     headers: {
-      'Accept': 'text/html'
+      'Accept': 'text/html',
+      'X-Referer-Config': window.location.pathname.replace(/test\/(index\.html)?(\?.*)?(#.*)?$/, '') + 'proxy.json'
     }
   })
     .done(function(response, status, deferred) {
