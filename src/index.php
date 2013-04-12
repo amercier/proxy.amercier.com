@@ -117,6 +117,9 @@ try {
     }
   }
 
+  $request->getHeaders()->addHeader(new Zend\Http\Header\GenericHeader('Origin', $url));
+  $request->getHeaders()->addHeader(new Zend\Http\Header\GenericHeader('Referer', $url));
+
   switch($inputRequest->getMethod()) {
     case Request::METHOD_OPTIONS : break;
     case Request::METHOD_GET     : break;
@@ -132,6 +135,7 @@ try {
   $request->setMethod($inputRequest->getMethod());
 
   $client = new Client();
+  $client->setOptions(array('sslverifypeer' => false));
   $response = $client->dispatch($request);
 
   $output = array(
@@ -184,6 +188,6 @@ else {
     }
   }
   header('Access-Control-Allow-Origin: *');
-  header('Access-Control-Allow-Headers: X-Referer-Config');
+  header('Access-Control-Allow-Headers: ' . $config->refererConfigHeaderName);
   echo $response->getBody();
 }
